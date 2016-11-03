@@ -7,6 +7,8 @@ import {
 } from 'draft-js';
 import { invoke, noop } from 'lodash';
 
+import MatchingTextDecorator from './editor/matching-text-decorator';
+
 function plainTextContent( editorState ) {
 	return editorState.getCurrentContent().getPlainText( '\n' )
 }
@@ -97,7 +99,8 @@ export default class NoteContentEditor extends React.Component {
 
 	state = {
 		editorState: EditorState.createWithContent(
-			ContentState.createFromText( this.props.content, '\n' )
+			ContentState.createFromText( this.props.content, '\n' ),
+			MatchingTextDecorator( this.props.filter ),
 		)
 	}
 
@@ -120,20 +123,20 @@ export default class NoteContentEditor extends React.Component {
 		this.setState( { editorState }, announceChanges );
 	}
 
-	componentWillReceiveProps( { content: newContent } ) {
-		const { content: oldContent } = this.props;
+	componentWillReceiveProps( { content: newContent, filter: nextFilter } ) {
+		const { content: oldContent, filter: prevFilter } = this.props;
 		const { editorState: oldEditorState } = this.state;
 
-		if ( newContent === oldContent ) {
-			return; // identical to previous `content` prop
-		}
-
-		if ( newContent === plainTextContent( oldEditorState ) ) {
+		if (
+			( newContent === plainTextContent( oldEditorState ) ) &&
+			( nextFilter === prevFilter )
+		) {
 			return; // identical to rendered content
 		}
 
 		let newEditorState = EditorState.createWithContent(
-			ContentState.createFromText( newContent, '\n' )
+			ContentState.createFromText( newContent, '\n' ),
+			MatchingTextDecorator( nextFilter ),
 		)
 
 		// avoids weird caret position if content is changed
