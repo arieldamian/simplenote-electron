@@ -195,14 +195,16 @@ export default class NoteContentEditor extends React.Component {
 
 	render() {
 		return (
-			<Editor
-				ref={this.saveEditorRef}
-				spellCheck
-				stripPastedStyles
-				onChange={this.handleEditorStateChange}
-				editorState={this.state.editorState}
-				onTab={this.onTab}
-			/>
+			<div className={ this.props.markdownEnabled ? 'is-markdown' : '' }>
+				<Editor
+					ref={this.saveEditorRef}
+					spellCheck
+					stripPastedStyles
+					onChange={this.handleEditorStateChange}
+					editorState={this.state.editorState}
+					onTab={this.onTab}
+				/>
+			</div>
 		);
 	}
 }
