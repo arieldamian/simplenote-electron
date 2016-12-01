@@ -1,20 +1,21 @@
 import React, { Component, PropTypes } from 'react';
-import Autosuggest from 'react-autosuggest';
 import {
 	identity,
 } from 'lodash';
 
+const KEY_TAB = 9;
+
 const startsWith = prefix => text =>
 	text
+		.trim()
 		.toLowerCase()
-		.startsWith( prefix );
+		.startsWith( prefix.trim().toLowerCase() );
 
 export class TagInput extends Component {
 	static propTypes = {
 		inputRef: PropTypes.func,
 		onChange: PropTypes.func,
 		onSelect: PropTypes.func,
-		tabIndex: PropTypes.number,
 		tagNames: PropTypes.arrayOf( PropTypes.string ).isRequired,
 		value: PropTypes.string.isRequired,
 	};
@@ -25,70 +26,57 @@ export class TagInput extends Component {
 		onSelect: identity,
 	};
 
-	constructor( props ) {
-		super( props );
+	interceptTabPress = event => {
+		const { keyCode } = event;
+		const { onSelect, tagNames, value } = this.props;
 
-		this.state = {
-			suggestions: [],
-		};
+		if ( KEY_TAB !== keyCode ) {
+			return;
+		}
 
-		this.storeInputRef = r => {
-			this.inputRef = r;
+		if ( ! value.length ) {
+			return;
+		}
 
-			this.props.inputRef( r.input );
-		};
-	}
+		const suggestion = tagNames.find( startsWith( value ) );
 
-	getSuggestions = input => {
-		const { tagNames } = this.props;
+		if ( suggestion ) {
+			onSelect( suggestion );
+		}
 
-		return tagNames.filter( startsWith( input.trim().toLowerCase() ) );
+		event.preventDefault();
+		event.stopPropagation();
 	};
 
-	onChange = ( event, { newValue } ) =>
-		newValue.endsWith( ',' ) // commas should automatically insert the tag
-			? this.onSuggestionSelected( null, { suggestionValue: newValue.slice( 0, -1 ) } )
-			: this.props.onChange( newValue );
-
-	onSuggestionSelected = ( event, { suggestionValue } ) => {
-		this.setState( {
-			suggestions: [],
-		}, () => this.props.onSelect( suggestionValue ) );
-	};
-
-	onSuggestionsFetchRequested = ( { value } ) =>
-		this.setState( { suggestions: this.getSuggestions( value ) } );
-
-	onSuggestionsClearRequested = () =>
-		this.setState( { suggestions: [] } );
-
-	renderSuggestion = tag => <span>{ tag }</span>;
+	onChange = ( { target: { value } } ) =>
+		value.endsWith( ',' ) // commas should automatically insert the tag
+			? this.props.onSelect( value.slice( 0, -1 ) )
+			: this.props.onChange( value );
 
 	render() {
 		const {
+			inputRef,
 			value,
-			tabIndex,
+			tagNames,
 		} = this.props;
-		const { suggestions } = this.state;
+
+		const suggestion = value.length && tagNames.find( startsWith( value ) );
 
 		return (
 			<div className="tag-input">
-				<Autosuggest { ...{
-					ref: this.storeInputRef,
-					suggestions,
-					focusFirstSuggestion: true,
-					getSuggestionValue: identity,
-					onSuggestionSelected: this.onSuggestionSelected,
-					onSuggestionsFetchRequested: this.onSuggestionsFetchRequested,
-					onSuggestionsClearRequested: this.onSuggestionsClearRequested,
-					renderSuggestion: this.renderSuggestion,
-					inputProps: {
-						placeholder: 'Add tags…',
-						onChange: this.onChange,
-						tabIndex,
-						value,
-					},
-				} } />
+				<input
+					ref={ inputRef }
+					className="tag-input__entry"
+					type="text"
+					value={ value }
+					onChange={ this.onChange }
+					onKeyDown={ this.interceptTabPress }
+				/>
+				<input
+					className="tag-input__suggestion"
+					type="text"
+					value={ suggestion ? suggestion : '' }
+				/>
 			</div>
 		);
 	}

@@ -2,27 +2,22 @@
 	overflow: visible;
 	position: relative;
 
-	.react-autosuggest__suggestions-container {
-		position: absolute;
-		bottom: 24px;
-		border: 1px solid $gray-lightest;
-		background-color: $white;
+	& .tag-input__entry {
+		z-index: 100;
 	}
 
-	.react-autosuggest__suggestions-list {
-		list-style: none;
-		padding-left: 0;
-		margin-top: 0;
-		margin-bottom: 0;
-	}
-
-	.react-autosuggest__suggestion {
-		margin: 0;
-		padding: 4px 16px 0 4px;
-	}
-
-	.react-autosuggest__suggestion--focused {
-		background: $blue-active-highlight;
-		color: $white;
+	& .tag-input__suggestion {
+		z-index: 50;
+		color: $gray;
 	}
 }
+
+.tag-input__entry,
+.tag-input__suggestion {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+}
+

@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import analytics from './analytics';
 import {
 	difference,
+	invoke,
 	union,
 } from 'lodash';
 
@@ -23,6 +24,7 @@ export default React.createClass( {
 
 	getInitialState: function() {
 		return {
+			didJustSelect: false,
 			selectedTag: -1,
 			tagInput: '',
 		};
@@ -51,7 +53,7 @@ export default React.createClass( {
 
 	componentDidUpdate: function() {
 		if ( this.hasSelection() ) {
-			this.refs.hiddenTag.focus();
+			this.hiddenTag.focus();
 		}
 	},
 
@@ -59,6 +61,7 @@ export default React.createClass( {
 		const newTags = tags.trim().replace( /\s+/g, ',' ).split( ',' );
 		this.props.onUpdateNoteTags( union( this.props.tags, newTags ) );
 		this.storeTagInput( '' );
+		invoke( this.tagInput, 'focus' );
 		analytics.tracks.recordEvent( 'editor_tag_added' );
 	},
 
@@ -70,7 +73,10 @@ export default React.createClass( {
 			return this.deleteTag( index );
 		}
 
-		this.setState( { selectedTag: index } );
+		this.setState( {
+			didJustSelect: true,
+			selectedTag: index,
+		} );
 	},
 
 	hasSelection: function() {
@@ -92,9 +98,7 @@ export default React.createClass( {
 			this.setState( { selectedTag: -1 } );
 		}
 
-		if ( this.tagInputRef ) {
-			this.tagInputRef.focus();
-		}
+		invoke( this.tagInput, 'focus' );
 
 		analytics.tracks.recordEvent( 'editor_tag_removed' );
 	},
@@ -102,6 +106,7 @@ export default React.createClass( {
 	deleteSelection: function() {
 		if ( this.hasSelection() ) {
 			this.deleteTag( this.state.selectedTag );
+
 		}
 	},
 
@@ -129,15 +134,12 @@ export default React.createClass( {
 		e.preventDefault();
 	},
 
-	onBlur: function() {
-		// only deselect if we're not inside the hidden tag
-		// this.setState({selectedTag: -1});
-		setTimeout( () => {
-			var h = this.refs.hiddenTag;
-			if ( h !== document.activeElement ) {
-				this.setState( { selectedTag: -1 } );
-			}
-		}, 1 );
+	storeHiddenTag( r ) {
+		this.hiddenTag = r;
+	},
+
+	storeInputRef( r ) {
+		this.tagInput = r;
 	},
 
 	storeTagInput( value ) {
@@ -146,20 +148,27 @@ export default React.createClass( {
 		} );
 	},
 
-	storeTagInputRef( r ) {
-		this.tagInputRef = r;
+	unselect( event ) {
+		if ( this.state.didJustSelect ) {
+			return this.setState( { didJustSelect: false } );
+		}
+
+		if ( this.hiddenTag !== event.relatedTarget ) {
+			this.setState( { selectedTag: -1 } );
+		}
 	},
 
 	render: function() {
-		var { selectedTag } = this.state;
+		const { selectedTag } = this.state;
 
 		return (
 			<div className="tag-entry theme-color-border">
 				<div className={classNames( 'tag-editor', { 'has-selection': this.hasSelection() } )}
 					tabIndex="-1"
 					onKeyDown={this.onKeyDown}
-					onBlur={this.onBlur}>
-					<input className="hidden-tag" tabIndex="-1" ref="hiddenTag" />
+					onBlur={ this.unselect }
+				>
+					<input className="hidden-tag" tabIndex="-1" ref={ this.storeHiddenTag } />
 					{this.props.tags.map( ( tag, index ) =>
 						<TagChip
 							key={tag}
@@ -170,8 +179,7 @@ export default React.createClass( {
 					)}
 					<div className="tag-field">
 						<TagInput
-							inputRef={ this.storeTagInputRef }
-							tabIndex={ 0 }
+							inputRef={ this.storeInputRef }
 							value={ this.state.tagInput }
 							onChange={ this.storeTagInput }
 							onSelect={ this.addTag }
