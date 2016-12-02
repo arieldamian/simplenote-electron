@@ -12,7 +12,8 @@ import {
 export default React.createClass( {
 
 	propTypes: {
-		tags: PropTypes.array,
+		unusedTags: PropTypes.arrayOf( PropTypes.string ),
+		usedTags: PropTypes.arrayOf( PropTypes.string ),
 		onUpdateNoteTags: PropTypes.func.isRequired
 	},
 
@@ -140,7 +141,8 @@ export default React.createClass( {
 	},
 
 	render: function() {
-		const { selectedTag } = this.state;
+		const { allTags, tags } = this.props;
+		const { selectedTag, tagInput } = this.state;
 
 		return (
 			<div className="tag-entry theme-color-border">
@@ -149,21 +151,21 @@ export default React.createClass( {
 					onKeyDown={this.onKeyDown}
 				>
 					<input className="hidden-tag" tabIndex="-1" ref={ this.storeHiddenTag } />
-					{this.props.tags.map( tag =>
+					{ tags.map( tag =>
 						<TagChip
 							key={tag}
 							tag={tag}
 							selected={ tag === selectedTag }
 							onSelect={ this.selectTag }
 						/>
-					)}
+					) }
 					<div className="tag-field">
 						<TagInput
 							inputRef={ this.storeInputRef }
-							value={ this.state.tagInput }
+							value={ tagInput }
 							onChange={ this.storeTagInput }
 							onSelect={ this.addTag }
-							tagNames={ this.props.allTags.map( t => t.data.name ) }
+							tagNames={ difference( allTags, tags ) }
 						/>
 					</div>
 				</div>
