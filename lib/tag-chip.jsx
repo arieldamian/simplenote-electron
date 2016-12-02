@@ -5,7 +5,8 @@ import { noop } from 'lodash';
 export const TagChip = ( { onSelect = noop, selected, tag: tagName } ) => (
 	<div
 		className={ classNames( 'tag-chip', { selected } ) }
-		onMouseDown={ onSelect }
+		data-tag-name={ tagName }
+		onClick={ onSelect }
 	>
 		{ tagName }
 	</div>

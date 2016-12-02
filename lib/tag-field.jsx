@@ -24,31 +24,17 @@ export default React.createClass( {
 
 	getInitialState: function() {
 		return {
-			didJustSelect: false,
-			selectedTag: -1,
+			selectedTag: '',
 			tagInput: '',
 		};
 	},
 
-	componentWillReceiveProps: function( nextProps ) {
-		const { selectedTag } = this.state;
-		const { tags: prevTags } = this.props;
-		const { tags: nextTags } = nextProps;
+	componentDidMount() {
+		document.addEventListener( 'click', this.unselect, true );
+	},
 
-		// if the tags changed externally, we need
-		// to match up the selected index with where
-		// the tag has moved in the list
-
-		if (
-			-1 === selectedTag || // no tag is selected
-			prevTags === nextTags // the tags are identical
-		) {
-			return;
-		}
-
-		this.setState( {
-			selectedTag: nextTags.indexOf( prevTags[ selectedTag ] ),
-		} );
+	componentWillUnmount() {
+		document.removeEventListener( 'click', this.unselect, true );
 	},
 
 	componentDidUpdate: function() {
@@ -61,44 +47,25 @@ export default React.createClass( {
 		const newTags = tags.trim().replace( /\s+/g, ',' ).split( ',' );
 		this.props.onUpdateNoteTags( union( this.props.tags, newTags ) );
 		this.storeTagInput( '' );
-		invoke( this.tagInput, 'focus' );
+		invoke( this, 'tagInput.focus' );
 		analytics.tracks.recordEvent( 'editor_tag_added' );
 	},
 
-	onSelectTag: function( tag, index ) {
-		const { selectedTag } = this.state;
-
-		// Remove tag if we already have it selected
-		if ( selectedTag === index ) {
-			return this.deleteTag( index );
-		}
-
-		this.setState( {
-			didJustSelect: true,
-			selectedTag: index,
-		} );
-	},
-
 	hasSelection: function() {
-		return this.state.selectedTag !== -1;
+		return !! this.state.selectedTag.length;
 	},
 
-	deleteTag: function( index ) {
-		const {
-			onUpdateNoteTags,
-			tags,
-		} = this.props;
+	deleteTag: function( tagName ) {
+		const { onUpdateNoteTags, tags } = this.props;
 		const { selectedTag } = this.state;
 
-		const newTags = difference( tags, [ tags[ selectedTag ] ] );
+		onUpdateNoteTags( difference( tags, [ tagName ] ) );
 
-		onUpdateNoteTags( newTags );
-
-		if ( selectedTag === index ) {
-			this.setState( { selectedTag: -1 } );
+		if ( selectedTag === tagName ) {
+			this.setState( { selectedTag: '' } );
 		}
 
-		invoke( this.tagInput, 'focus' );
+		invoke( this, 'tagInput.focus' );
 
 		analytics.tracks.recordEvent( 'editor_tag_removed' );
 	},
@@ -106,14 +73,28 @@ export default React.createClass( {
 	deleteSelection: function() {
 		if ( this.hasSelection() ) {
 			this.deleteTag( this.state.selectedTag );
-
 		}
 	},
 
 	selectLastTag: function() {
 		this.setState( {
-			selectedTag: this.props.tags.length - 1
+			selectedTag: this.props.tags.slice( -1 ).shift()
 		} );
+	},
+
+	selectTag( event ) {
+		const { target: { dataset: { tagName } } } = event;
+		const { selectedTag } = this.state;
+
+		event.preventDefault();
+		event.stopPropagation();
+
+		// Remove tag if we already have it selected
+		if ( selectedTag === tagName ) {
+			return this.deleteTag( tagName );
+		}
+
+		this.setState( { selectedTag: tagName } );
 	},
 
 	onKeyDown: function( e ) {
@@ -149,12 +130,12 @@ export default React.createClass( {
 	},
 
 	unselect( event ) {
-		if ( this.state.didJustSelect ) {
-			return this.setState( { didJustSelect: false } );
+		if ( ! this.state.selectedTag ) {
+			return;
 		}
 
 		if ( this.hiddenTag !== event.relatedTarget ) {
-			this.setState( { selectedTag: -1 } );
+			this.setState( { selectedTag: '' } );
 		}
 	},
 
@@ -166,15 +147,14 @@ export default React.createClass( {
 				<div className={classNames( 'tag-editor', { 'has-selection': this.hasSelection() } )}
 					tabIndex="-1"
 					onKeyDown={this.onKeyDown}
-					onBlur={ this.unselect }
 				>
 					<input className="hidden-tag" tabIndex="-1" ref={ this.storeHiddenTag } />
-					{this.props.tags.map( ( tag, index ) =>
+					{this.props.tags.map( tag =>
 						<TagChip
 							key={tag}
 							tag={tag}
-							selected={index === selectedTag}
-							onSelect={this.onSelectTag.bind( this, tag, index )}
+							selected={ tag === selectedTag }
+							onSelect={ this.selectTag }
 						/>
 					)}
 					<div className="tag-field">
