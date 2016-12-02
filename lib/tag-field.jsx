@@ -85,17 +85,11 @@ export default React.createClass( {
 
 	selectTag( event ) {
 		const { target: { dataset: { tagName } } } = event;
-		const { selectedTag } = this.state;
 
 		event.preventDefault();
 		event.stopPropagation();
 
-		// Remove tag if we already have it selected
-		if ( selectedTag === tagName ) {
-			return this.deleteTag( tagName );
-		}
-
-		this.setState( { selectedTag: tagName } );
+		this.deleteTag( tagName );
 	},
 
 	onKeyDown: function( e ) {
@@ -146,7 +140,7 @@ export default React.createClass( {
 
 		return (
 			<div className="tag-entry theme-color-border">
-				<div className={classNames( 'tag-editor', { 'has-selection': this.hasSelection() } )}
+				<div className={ classNames( 'tag-editor', { 'has-selection': this.hasSelection() } )}
 					tabIndex="-1"
 					onKeyDown={this.onKeyDown}
 				>
@@ -159,15 +153,13 @@ export default React.createClass( {
 							onSelect={ this.selectTag }
 						/>
 					) }
-					<div className="tag-field">
-						<TagInput
-							inputRef={ this.storeInputRef }
-							value={ tagInput }
-							onChange={ this.storeTagInput }
-							onSelect={ this.addTag }
-							tagNames={ difference( allTags, tags ) }
-						/>
-					</div>
+					<TagInput
+						inputRef={ this.storeInputRef }
+						value={ tagInput }
+						onChange={ this.storeTagInput }
+						onSelect={ this.addTag }
+						tagNames={ difference( allTags, tags ) }
+					/>
 				</div>
 			</div>
 		);
