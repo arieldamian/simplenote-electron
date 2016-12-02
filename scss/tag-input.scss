@@ -8,7 +8,7 @@
 
 	& .tag-input__suggestion {
 		z-index: 50;
-		color: $gray;
+		color: lighten( $gray, 10% );
 	}
 }
 

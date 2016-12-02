@@ -1,9 +1,11 @@
 import React, { Component, PropTypes } from 'react';
 import {
 	identity,
+	invoke,
 } from 'lodash';
 
 const KEY_TAB = 9;
+const KEY_ENTER = 13;
 
 const startsWith = prefix => text =>
 	text
@@ -26,13 +28,13 @@ export class TagInput extends Component {
 		onSelect: identity,
 	};
 
-	interceptTabPress = event => {
-		const { keyCode } = event;
-		const { onSelect, tagNames, value } = this.props;
+	interceptKeys = event => invoke( {
+		[ KEY_ENTER ]: this.submitTag,
+		[ KEY_TAB ]: this.interceptTabPress,
+	}, event.keyCode, event );
 
-		if ( KEY_TAB !== keyCode ) {
-			return;
-		}
+	interceptTabPress = event => {
+		const { onChange, tagNames, value } = this.props;
 
 		if ( ! value.length ) {
 			return;
@@ -41,7 +43,7 @@ export class TagInput extends Component {
 		const suggestion = tagNames.find( startsWith( value ) );
 
 		if ( suggestion ) {
-			onSelect( suggestion );
+			onChange( suggestion );
 		}
 
 		event.preventDefault();
@@ -50,8 +52,17 @@ export class TagInput extends Component {
 
 	onChange = ( { target: { value } } ) =>
 		value.endsWith( ',' ) // commas should automatically insert the tag
-			? this.props.onSelect( value.slice( 0, -1 ) )
+			? this.props.onSelect( value.slice( 0, -1 ).trim() )
 			: this.props.onChange( value );
+
+	submitTag = event => {
+		const { onSelect, value } = this.props;
+
+		onSelect( value.trim() );
+
+		event.preventDefault();
+		event.stopPropagation();
+	};
 
 	render() {
 		const {
@@ -70,7 +81,7 @@ export class TagInput extends Component {
 					type="text"
 					value={ value }
 					onChange={ this.onChange }
-					onKeyDown={ this.interceptTabPress }
+					onKeyDown={ this.interceptKeys }
 				/>
 				<input
 					className="tag-input__suggestion"
